@@ -18,7 +18,11 @@
             <nav class="nav">
                 <button id="home-btn" class="nav-btn active">
                     <i class="fas fa-home"></i>
-                    Home
+                    All Products
+                </button>
+                <button id="departments-btn" class="nav-btn">
+                    <i class="fas fa-th-large"></i>
+                    Departments
                 </button>
                 <button id="stats-btn" class="nav-btn">
                     <i class="fas fa-chart-bar"></i>
@@ -44,7 +48,7 @@
                 <button onclick="location.reload()" class="btn btn-primary">Retry</button>
             </div>
 
-            <!-- Home View -->
+            <!-- Home View (All Products) -->
             <div id="home-view" class="view">
                 <!-- Search and Filters -->
                 <div class="filters">
@@ -61,8 +65,6 @@
                         </select>
                         <select id="department-filter">
                             <option value="">All Departments</option>
-                            <option value="Men">Men</option>
-                            <option value="Women">Women</option>
                         </select>
                     </div>
                 </div>
@@ -80,6 +82,68 @@
                     </button>
                     <span id="page-info" class="page-info">Page 1 of 1</span>
                     <button id="next-btn" class="btn btn-secondary">
+                        Next
+                        <i class="fas fa-chevron-right"></i>
+                    </button>
+                </div>
+            </div>
+
+            <!-- Departments View -->
+            <div id="departments-view" class="view hidden">
+                <div class="departments-header">
+                    <h2>Browse by Department</h2>
+                    <p>Select a department to view its products</p>
+                </div>
+                
+                <!-- Departments Grid -->
+                <div id="departments-container" class="departments-grid">
+                    <!-- Departments will be loaded here -->
+                </div>
+            </div>
+
+            <!-- Department Products View -->
+            <div id="department-view" class="view hidden">
+                <!-- Department Header -->
+                <div class="department-header">
+                    <button id="back-to-departments-btn" class="btn btn-secondary">
+                        <i class="fas fa-arrow-left"></i>
+                        Back to Departments
+                    </button>
+                    <div class="department-info">
+                        <h2 id="department-name">Department Name</h2>
+                        <p id="department-count">0 products</p>
+                    </div>
+                </div>
+
+                <!-- Department Filters -->
+                <div class="filters">
+                    <div class="search-box">
+                        <i class="fas fa-search"></i>
+                        <input type="text" id="dept-search-input" placeholder="Search in this department...">
+                    </div>
+                    <div class="filter-controls">
+                        <select id="dept-category-filter">
+                            <option value="">All Categories</option>
+                        </select>
+                        <select id="dept-brand-filter">
+                            <option value="">All Brands</option>
+                        </select>
+                    </div>
+                </div>
+
+                <!-- Department Products Grid -->
+                <div id="department-products-container" class="products-grid">
+                    <!-- Department products will be loaded here -->
+                </div>
+
+                <!-- Department Pagination -->
+                <div id="dept-pagination" class="pagination hidden">
+                    <button id="dept-prev-btn" class="btn btn-secondary">
+                        <i class="fas fa-chevron-left"></i>
+                        Previous
+                    </button>
+                    <span id="dept-page-info" class="page-info">Page 1 of 1</span>
+                    <button id="dept-next-btn" class="btn btn-secondary">
                         Next
                         <i class="fas fa-chevron-right"></i>
                     </button>
@@ -112,7 +176,7 @@
     <!-- Footer -->
     <footer class="footer">
         <div class="container">
-            <p>&copy; 2025 Products Catalog. Built with ❤️ for Milestone 3.</p>
+            <p>&copy; 2025 Products Catalog. Built with ❤️ for Milestone 6.</p>
         </div>
     </footer>
 
