@@ -2,30 +2,30 @@
 
 ## 🎯 Overview
 
-This milestone completes the full-stack e-commerce application by adding department-based navigation and product browsing functionality. Users can now browse products by department, with proper URL routing and a seamless user experience.
+This milestone completes the full-stack e-commerce application by adding product category-based navigation and product browsing functionality. Users can now browse products by category (departments), with proper URL routing and a seamless user experience.
 
 ## ✅ All Requirements Implemented
 
-### 1. **Departments List** ✅
-- **Feature**: Show all available departments in a dedicated departments page
-- **Implementation**: Beautiful grid layout with department cards showing name, product count, and description
-- **Access**: Click "Departments" in the navigation bar
+### 1. **Product Categories List** ✅
+- **Feature**: Show all available product categories in a dedicated categories page
+- **Implementation**: Beautiful grid layout with category cards showing name, product count, and description
+- **Access**: Click "Categories" in the navigation bar
 - **URL**: `/departments`
 
-### 2. **Department Page** ✅
-- **Feature**: When clicking a department, show only products from that department
-- **Implementation**: Dedicated department view with filtered products
+### 2. **Category Page** ✅
+- **Feature**: When clicking a category, show only products from that category
+- **Implementation**: Dedicated category view with filtered products
 - **URL**: `/departments/{id}` (e.g., `/departments/1`)
 
-### 3. **Department Header** ✅
-- **Feature**: Display the department name and product count
-- **Implementation**: Prominent header showing department name and total product count
-- **Example**: "Men - 13,131 products"
+### 3. **Category Header** ✅
+- **Feature**: Display the category name and product count
+- **Implementation**: Prominent header showing category name and total product count
+- **Example**: "Electronics - 13,131 products"
 
 ### 4. **Navigation** ✅
-- **Feature**: Allow users to go back to all products or switch between departments
+- **Feature**: Allow users to go back to all products or switch between categories
 - **Implementation**: 
-  - "Back to Departments" button in department pages
+  - "Back to Categories" button in category pages
   - "All Products" navigation in header
   - Browser back/forward button support
   - Breadcrumb-style navigation

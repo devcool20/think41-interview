@@ -233,6 +233,58 @@ class ProductsApp {
         }
     }
 
+    getDepartmentIcon(departmentName) {
+        // Map department names to appropriate icons for product categories
+        const iconMap = {
+            'electronics': 'fas fa-laptop',
+            'clothing': 'fas fa-tshirt',
+            'home': 'fas fa-home',
+            'garden': 'fas fa-seedling',
+            'sports': 'fas fa-dumbbell',
+            'books': 'fas fa-book',
+            'toys': 'fas fa-gamepad',
+            'automotive': 'fas fa-car',
+            'health': 'fas fa-heartbeat',
+            'beauty': 'fas fa-spa',
+            'food': 'fas fa-utensils',
+            'jewelry': 'fas fa-gem',
+            'tools': 'fas fa-wrench',
+            'furniture': 'fas fa-couch',
+            'outdoors': 'fas fa-campground',
+            'baby': 'fas fa-baby',
+            'pet': 'fas fa-paw',
+            'office': 'fas fa-briefcase',
+            'music': 'fas fa-music',
+            'art': 'fas fa-palette'
+        };
+        
+        // Try to match department name to icon
+        const lowerName = departmentName.toLowerCase();
+        for (const [key, icon] of Object.entries(iconMap)) {
+            if (lowerName.includes(key)) {
+                return icon;
+            }
+        }
+        
+        // Default icon for unknown departments
+        return 'fas fa-box';
+    }
+
+    getDepartmentDescription(departmentName) {
+        // Generate appropriate descriptions for product category departments
+        const descriptions = [
+            `Browse our complete collection of ${departmentName.toLowerCase()} products`,
+            `Discover the latest ${departmentName.toLowerCase()} items in our catalog`,
+            `Shop the best ${departmentName.toLowerCase()} products at great prices`,
+            `Find quality ${departmentName.toLowerCase()} products for every need`,
+            `Explore our extensive ${departmentName.toLowerCase()} selection`
+        ];
+        
+        // Use department name to select appropriate description
+        const index = departmentName.length % descriptions.length;
+        return descriptions[index];
+    }
+
     renderDepartments() {
         const container = document.getElementById('departments-container');
         
@@ -241,7 +293,7 @@ class ProductsApp {
                 <div class="text-center" style="grid-column: 1 / -1; padding: 3rem;">
                     <i class="fas fa-th-large" style="font-size: 3rem; color: #6c757d; margin-bottom: 1rem;"></i>
                     <h3>No departments found</h3>
-                    <p>There are no departments available at the moment.</p>
+                    <p>There are no product categories available at the moment.</p>
                 </div>
             `;
             return;
@@ -250,12 +302,12 @@ class ProductsApp {
         container.innerHTML = this.departments.map(department => `
             <div class="department-card" onclick="app.navigateToDepartment(${department.id})">
                 <div class="department-icon">
-                    <i class="fas fa-tshirt"></i>
+                    <i class="${this.getDepartmentIcon(department.name)}"></i>
                 </div>
                 <div class="department-name">${department.name}</div>
                 <div class="department-count">${department.product_count.toLocaleString()} products</div>
                 <div class="department-description">
-                    Browse all ${department.name.toLowerCase()} products in our catalog
+                    ${this.getDepartmentDescription(department.name)}
                 </div>
             </div>
         `).join('');
@@ -298,8 +350,8 @@ class ProductsApp {
             container.innerHTML = `
                 <div class="text-center" style="grid-column: 1 / -1; padding: 3rem;">
                     <i class="fas fa-search" style="font-size: 3rem; color: #6c757d; margin-bottom: 1rem;"></i>
-                    <h3>No products found in this department</h3>
-                    <p>Try adjusting your search or filters, or browse other departments.</p>
+                    <h3>No products found in this category</h3>
+                    <p>Try adjusting your search or filters, or browse other product categories.</p>
                 </div>
             `;
             return;
@@ -346,7 +398,7 @@ class ProductsApp {
                         <div class="info-value">$${product.cost.toFixed(2)}</div>
                     </div>
                     <div class="info-item">
-                        <div class="info-label">Department</div>
+                        <div class="info-label">Product Category</div>
                         <div class="info-value">${product.department.name}</div>
                     </div>
                     <div class="info-item">
@@ -380,7 +432,7 @@ class ProductsApp {
             </div>
             <div class="stat-card">
                 <div class="stat-value">${stats.total_departments || 0}</div>
-                <div class="stat-label">Departments</div>
+                <div class="stat-label">Product Categories</div>
             </div>
             <div class="stat-card">
                 <div class="stat-value">$${stats.price_stats.average_price}</div>
@@ -418,7 +470,7 @@ class ProductsApp {
             </div>
             ${stats.top_departments ? `
             <div class="top-departments">
-                <h3>Top Departments</h3>
+                <h3>Top Product Categories</h3>
                 ${stats.top_departments.map(dept => `
                     <div class="department-item">
                         <span class="department-name">${dept.name}</span>
