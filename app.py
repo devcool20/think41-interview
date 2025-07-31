@@ -1,11 +1,13 @@
 #!/usr/bin/env python3
 """
 Flask REST API for Products Database
-Milestone 2: Build REST API for Products
+Milestone 4: Updated to work with refactored database structure
 
 Endpoints:
 - GET /api/products - List all products (with pagination)
 - GET /api/products/{id} - Get specific product by ID
+- GET /api/departments - Get all departments
+- GET /api/products/stats - Get product statistics
 - Error handling for product not found, invalid ID, etc.
 """
 
@@ -42,7 +44,10 @@ def format_product(row):
         'name': row['name'],
         'brand': row['brand'],
         'category': row['category'],
-        'department': row['department'],
+        'department': {
+            'id': row['department_id'],
+            'name': row['department_name']
+        },
         'cost': float(row['cost']),
         'retail_price': float(row['retail_price']),
         'sku': row['sku'],
@@ -61,7 +66,8 @@ def get_products():
     - limit: Items per page (default: 10, max: 100)
     - category: Filter by category
     - brand: Filter by brand
-    - department: Filter by department
+    - department_id: Filter by department ID
+    - department_name: Filter by department name
     """
     try:
         # Get query parameters
@@ -69,29 +75,39 @@ def get_products():
         limit = min(request.args.get('limit', 10, type=int), 100)  # Max 100 items per page
         category = request.args.get('category')
         brand = request.args.get('brand')
-        department = request.args.get('department')
+        department_id = request.args.get('department_id', type=int)
+        department_name = request.args.get('department_name')
         
         # Calculate offset
         offset = (page - 1) * limit
         
-        # Build query
-        query = "SELECT * FROM products WHERE 1=1"
+        # Build query with JOIN to get department information
+        query = """
+            SELECT p.*, d.name as department_name 
+            FROM products p 
+            LEFT JOIN departments d ON p.department_id = d.id 
+            WHERE 1=1
+        """
         params = []
         
         if category:
-            query += " AND category = ?"
+            query += " AND p.category = ?"
             params.append(category)
         
         if brand:
-            query += " AND brand = ?"
+            query += " AND p.brand = ?"
             params.append(brand)
             
-        if department:
-            query += " AND department = ?"
-            params.append(department)
+        if department_id:
+            query += " AND p.department_id = ?"
+            params.append(department_id)
+            
+        if department_name:
+            query += " AND d.name = ?"
+            params.append(department_name)
         
         # Get total count
-        count_query = query.replace("SELECT *", "SELECT COUNT(*)")
+        count_query = query.replace("SELECT p.*, d.name as department_name", "SELECT COUNT(*)")
         conn = get_db_connection()
         if not conn:
             return jsonify({'error': 'Database connection failed'}), 500
@@ -101,7 +117,7 @@ def get_products():
         total_count = cursor.fetchone()[0]
         
         # Get paginated results
-        query += " ORDER BY id LIMIT ? OFFSET ?"
+        query += " ORDER BY p.id LIMIT ? OFFSET ?"
         params.extend([limit, offset])
         
         cursor.execute(query, params)
@@ -128,7 +144,8 @@ def get_products():
             'filters': {
                 'category': category,
                 'brand': brand,
-                'department': department
+                'department_id': department_id,
+                'department_name': department_name
             }
         }
         
@@ -150,7 +167,12 @@ def get_product(product_id):
             return jsonify({'error': 'Database connection failed'}), 500
             
         cursor = conn.cursor()
-        cursor.execute("SELECT * FROM products WHERE id = ?", (product_id,))
+        cursor.execute("""
+            SELECT p.*, d.name as department_name 
+            FROM products p 
+            LEFT JOIN departments d ON p.department_id = d.id 
+            WHERE p.id = ?
+        """, (product_id,))
         row = cursor.fetchone()
         
         if row is None:
@@ -164,6 +186,94 @@ def get_product(product_id):
         
     except Exception as e:
         logger.error(f"Error in get_product: {e}")
+        return jsonify({'error': 'Internal server error'}), 500
+
+@app.route('/api/departments', methods=['GET'])
+def get_departments():
+    """
+    GET /api/departments - Get all departments with optional product count
+    """
+    try:
+        include_count = request.args.get('include_count', 'false').lower() == 'true'
+        
+        conn = get_db_connection()
+        if not conn:
+            return jsonify({'error': 'Database connection failed'}), 500
+            
+        cursor = conn.cursor()
+        
+        if include_count:
+            cursor.execute("""
+                SELECT d.id, d.name, d.created_at, d.updated_at, COUNT(p.id) as product_count
+                FROM departments d
+                LEFT JOIN products p ON d.id = p.department_id
+                GROUP BY d.id, d.name, d.created_at, d.updated_at
+                ORDER BY d.name
+            """)
+            departments = []
+            for row in cursor.fetchall():
+                departments.append({
+                    'id': row[0],
+                    'name': row[1],
+                    'created_at': row[2],
+                    'updated_at': row[3],
+                    'product_count': row[4]
+                })
+        else:
+            cursor.execute("SELECT id, name, created_at, updated_at FROM departments ORDER BY name")
+            departments = []
+            for row in cursor.fetchall():
+                departments.append({
+                    'id': row[0],
+                    'name': row[1],
+                    'created_at': row[2],
+                    'updated_at': row[3]
+                })
+        
+        conn.close()
+        return jsonify({'departments': departments}), 200
+        
+    except Exception as e:
+        logger.error(f"Error in get_departments: {e}")
+        return jsonify({'error': 'Internal server error'}), 500
+
+@app.route('/api/departments/<int:department_id>', methods=['GET'])
+def get_department(department_id):
+    """
+    GET /api/departments/{id} - Get a specific department by ID
+    """
+    try:
+        conn = get_db_connection()
+        if not conn:
+            return jsonify({'error': 'Database connection failed'}), 500
+            
+        cursor = conn.cursor()
+        cursor.execute("""
+            SELECT d.id, d.name, d.created_at, d.updated_at, COUNT(p.id) as product_count
+            FROM departments d
+            LEFT JOIN products p ON d.id = p.department_id
+            WHERE d.id = ?
+            GROUP BY d.id, d.name, d.created_at, d.updated_at
+        """, (department_id,))
+        row = cursor.fetchone()
+        
+        if row is None:
+            conn.close()
+            return jsonify({'error': 'Department not found'}), 404
+        
+        department = {
+            'id': row[0],
+            'name': row[1],
+            'created_at': row[2],
+            'updated_at': row[3],
+            'product_count': row[4]
+        }
+        
+        conn.close()
+        return jsonify(department), 200
+        
+    except Exception as e:
+        logger.error(f"Error in get_department: {e}")
         return jsonify({'error': 'Internal server error'}), 500
 
 @app.route('/api/products/stats', methods=['GET'])
@@ -187,6 +297,9 @@ def get_product_stats():
         
         cursor.execute("SELECT COUNT(DISTINCT brand) FROM products")
         total_brands = cursor.fetchone()[0]
+        
+        cursor.execute("SELECT COUNT(DISTINCT department_id) FROM products")
+        total_departments = cursor.fetchone()[0]
         
         cursor.execute("SELECT AVG(retail_price) FROM products")
         avg_price = cursor.fetchone()[0]
@@ -214,19 +327,32 @@ def get_product_stats():
         """)
         top_brands = [{'brand': row[0], 'count': row[1]} for row in cursor.fetchall()]
         
+        # Get top departments
+        cursor.execute("""
+            SELECT d.name, COUNT(*) as count 
+            FROM products p
+            JOIN departments d ON p.department_id = d.id
+            GROUP BY d.id, d.name 
+            ORDER BY count DESC 
+            LIMIT 5
+        """)
+        top_departments = [{'department': row[0], 'count': row[1]} for row in cursor.fetchall()]
+        
         conn.close()
         
         stats = {
             'total_products': total_products,
             'total_categories': total_categories,
             'total_brands': total_brands,
+            'total_departments': total_departments,
             'price_stats': {
                 'average_price': round(float(avg_price), 2),
                 'min_price': round(float(min_price), 2),
                 'max_price': round(float(max_price), 2)
             },
             'top_categories': top_categories,
-            'top_brands': top_brands
+            'top_brands': top_brands,
+            'top_departments': top_departments
         }
         
         return jsonify(stats), 200
@@ -291,12 +417,14 @@ def internal_error(error):
 def home():
     """Home endpoint with API documentation"""
     return jsonify({
-        'message': 'Products REST API',
-        'version': '1.0.0',
+        'message': 'Products REST API (Refactored with Departments)',
+        'version': '2.0.0',
         'endpoints': {
             'GET /api/products': 'List all products (with pagination and filters)',
             'GET /api/products/{id}': 'Get specific product by ID',
             'GET /api/products/stats': 'Get product statistics',
+            'GET /api/departments': 'Get all departments',
+            'GET /api/departments/{id}': 'Get specific department by ID',
             'GET /api/categories': 'Get all product categories',
             'GET /api/brands': 'Get all product brands'
         },
@@ -305,16 +433,24 @@ def home():
             'limit': 'Items per page (default: 10, max: 100)',
             'category': 'Filter by category',
             'brand': 'Filter by brand',
-            'department': 'Filter by department'
+            'department_id': 'Filter by department ID',
+            'department_name': 'Filter by department name',
+            'include_count': 'Include product count in departments response (true/false)'
+        },
+        'database_structure': {
+            'products': 'Contains product information with department_id foreign key',
+            'departments': 'Contains department information with proper normalization'
         }
     }), 200
 
 if __name__ == '__main__':
-    logger.info("Starting Products REST API...")
+    logger.info("Starting Products REST API (Refactored)...")
     logger.info("Available endpoints:")
     logger.info("  GET /api/products - List all products")
     logger.info("  GET /api/products/{id} - Get specific product")
     logger.info("  GET /api/products/stats - Get statistics")
+    logger.info("  GET /api/departments - Get all departments")
+    logger.info("  GET /api/departments/{id} - Get specific department")
     logger.info("  GET /api/categories - Get all categories")
     logger.info("  GET /api/brands - Get all brands")
     
