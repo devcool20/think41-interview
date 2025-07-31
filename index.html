@@ -1,0 +1,121 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Products Catalog - Frontend UI</title>
+    <link rel="stylesheet" href="styles.css">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+</head>
+<body>
+    <!-- Header -->
+    <header class="header">
+        <div class="container">
+            <h1 class="logo">
+                <i class="fas fa-shopping-bag"></i>
+                Products Catalog
+            </h1>
+            <nav class="nav">
+                <button id="home-btn" class="nav-btn active">
+                    <i class="fas fa-home"></i>
+                    Home
+                </button>
+                <button id="stats-btn" class="nav-btn">
+                    <i class="fas fa-chart-bar"></i>
+                    Statistics
+                </button>
+            </nav>
+        </div>
+    </header>
+
+    <!-- Main Content -->
+    <main class="main">
+        <div class="container">
+            <!-- Loading Spinner -->
+            <div id="loading" class="loading hidden">
+                <div class="spinner"></div>
+                <p>Loading products...</p>
+            </div>
+
+            <!-- Error Message -->
+            <div id="error" class="error hidden">
+                <i class="fas fa-exclamation-triangle"></i>
+                <p id="error-message">An error occurred</p>
+                <button onclick="location.reload()" class="btn btn-primary">Retry</button>
+            </div>
+
+            <!-- Home View -->
+            <div id="home-view" class="view">
+                <!-- Search and Filters -->
+                <div class="filters">
+                    <div class="search-box">
+                        <i class="fas fa-search"></i>
+                        <input type="text" id="search-input" placeholder="Search products...">
+                    </div>
+                    <div class="filter-controls">
+                        <select id="category-filter">
+                            <option value="">All Categories</option>
+                        </select>
+                        <select id="brand-filter">
+                            <option value="">All Brands</option>
+                        </select>
+                        <select id="department-filter">
+                            <option value="">All Departments</option>
+                            <option value="Men">Men</option>
+                            <option value="Women">Women</option>
+                        </select>
+                    </div>
+                </div>
+
+                <!-- Products Grid -->
+                <div id="products-container" class="products-grid">
+                    <!-- Products will be loaded here -->
+                </div>
+
+                <!-- Pagination -->
+                <div id="pagination" class="pagination hidden">
+                    <button id="prev-btn" class="btn btn-secondary">
+                        <i class="fas fa-chevron-left"></i>
+                        Previous
+                    </button>
+                    <span id="page-info" class="page-info">Page 1 of 1</span>
+                    <button id="next-btn" class="btn btn-secondary">
+                        Next
+                        <i class="fas fa-chevron-right"></i>
+                    </button>
+                </div>
+            </div>
+
+            <!-- Product Detail View -->
+            <div id="detail-view" class="view hidden">
+                <div class="detail-header">
+                    <button id="back-btn" class="btn btn-secondary">
+                        <i class="fas fa-arrow-left"></i>
+                        Back to Products
+                    </button>
+                </div>
+                <div id="product-detail" class="product-detail">
+                    <!-- Product details will be loaded here -->
+                </div>
+            </div>
+
+            <!-- Statistics View -->
+            <div id="stats-view" class="view hidden">
+                <h2>Product Statistics</h2>
+                <div id="stats-container" class="stats-grid">
+                    <!-- Statistics will be loaded here -->
+                </div>
+            </div>
+        </div>
+    </main>
+
+    <!-- Footer -->
+    <footer class="footer">
+        <div class="container">
+            <p>&copy; 2025 Products Catalog. Built with ❤️ for Milestone 3.</p>
+        </div>
+    </footer>
+
+    <script src="app.js"></script>
+</body>
+</html> 
