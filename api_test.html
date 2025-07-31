@@ -1,0 +1,286 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Products API Test</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 20px;
+            background-color: #f5f5f5;
+        }
+        .container {
+            background: white;
+            padding: 20px;
+            border-radius: 8px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+            margin-bottom: 20px;
+        }
+        h1 {
+            color: #333;
+            text-align: center;
+        }
+        .endpoint {
+            background: #f8f9fa;
+            padding: 15px;
+            border-radius: 5px;
+            margin: 10px 0;
+            border-left: 4px solid #007bff;
+        }
+        .endpoint h3 {
+            margin: 0 0 10px 0;
+            color: #007bff;
+        }
+        button {
+            background: #007bff;
+            color: white;
+            border: none;
+            padding: 8px 16px;
+            border-radius: 4px;
+            cursor: pointer;
+            margin: 5px;
+        }
+        button:hover {
+            background: #0056b3;
+        }
+        .response {
+            background: #f8f9fa;
+            border: 1px solid #dee2e6;
+            border-radius: 4px;
+            padding: 10px;
+            margin-top: 10px;
+            max-height: 300px;
+            overflow-y: auto;
+            font-family: monospace;
+            font-size: 12px;
+        }
+        .error {
+            color: #dc3545;
+        }
+        .success {
+            color: #28a745;
+        }
+        .stats {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 15px;
+            margin: 20px 0;
+        }
+        .stat-card {
+            background: #e9ecef;
+            padding: 15px;
+            border-radius: 5px;
+            text-align: center;
+        }
+        .stat-value {
+            font-size: 24px;
+            font-weight: bold;
+            color: #007bff;
+        }
+        .stat-label {
+            color: #6c757d;
+            font-size: 14px;
+        }
+        .product-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+            gap: 15px;
+            margin: 20px 0;
+        }
+        .product-card {
+            background: white;
+            border: 1px solid #dee2e6;
+            border-radius: 5px;
+            padding: 15px;
+        }
+        .product-name {
+            font-weight: bold;
+            margin-bottom: 5px;
+        }
+        .product-brand {
+            color: #6c757d;
+            font-size: 14px;
+        }
+        .product-price {
+            color: #28a745;
+            font-weight: bold;
+            margin-top: 5px;
+        }
+        .loading {
+            color: #6c757d;
+            font-style: italic;
+        }
+    </style>
+</head>
+<body>
+    <h1>🚀 Products REST API Test</h1>
+    
+    <div class="container">
+        <h2>API Endpoints</h2>
+        
+        <div class="endpoint">
+            <h3>GET /api/products</h3>
+            <p>List all products with pagination and filtering</p>
+            <button onclick="testProducts()">Test Products List</button>
+            <button onclick="testProductsWithFilters()">Test with Filters</button>
+            <div id="products-response" class="response"></div>
+        </div>
+        
+        <div class="endpoint">
+            <h3>GET /api/products/{id}</h3>
+            <p>Get a specific product by ID</p>
+            <input type="text" id="product-id" placeholder="Enter product ID" style="padding: 5px; margin-right: 10px;">
+            <button onclick="testSpecificProduct()">Get Product</button>
+            <div id="specific-product-response" class="response"></div>
+        </div>
+        
+        <div class="endpoint">
+            <h3>GET /api/products/stats</h3>
+            <p>Get product statistics</p>
+            <button onclick="testStats()">Get Statistics</button>
+            <div id="stats-response" class="response"></div>
+        </div>
+        
+        <div class="endpoint">
+            <h3>GET /api/categories</h3>
+            <p>Get all product categories</p>
+            <button onclick="testCategories()">Get Categories</button>
+            <div id="categories-response" class="response"></div>
+        </div>
+        
+        <div class="endpoint">
+            <h3>GET /api/brands</h3>
+            <p>Get all product brands</p>
+            <button onclick="testBrands()">Get Brands</button>
+            <div id="brands-response" class="response"></div>
+        </div>
+    </div>
+    
+    <div class="container">
+        <h2>Live Dashboard</h2>
+        <button onclick="loadDashboard()">Load Dashboard</button>
+        <div id="dashboard">
+            <div class="loading">Click "Load Dashboard" to see live data...</div>
+        </div>
+    </div>
+
+    <script>
+        const API_BASE = 'http://localhost:5000';
+        
+        async function makeRequest(endpoint, responseId) {
+            const responseDiv = document.getElementById(responseId);
+            responseDiv.innerHTML = '<div class="loading">Loading...</div>';
+            
+            try {
+                const response = await fetch(`${API_BASE}${endpoint}`);
+                const data = await response.json();
+                
+                if (response.ok) {
+                    responseDiv.innerHTML = `<div class="success">✅ Success (${response.status})</div>
+                        <pre>${JSON.stringify(data, null, 2)}</pre>`;
+                } else {
+                    responseDiv.innerHTML = `<div class="error">❌ Error (${response.status})</div>
+                        <pre>${JSON.stringify(data, null, 2)}</pre>`;
+                }
+            } catch (error) {
+                responseDiv.innerHTML = `<div class="error">❌ Connection Error</div>
+                    <pre>${error.message}</pre>
+                    <p>Make sure the API is running: <code>python app.py</code></p>`;
+            }
+        }
+        
+        function testProducts() {
+            makeRequest('/api/products', 'products-response');
+        }
+        
+        function testProductsWithFilters() {
+            makeRequest('/api/products?category=Jeans&limit=5', 'products-response');
+        }
+        
+        function testSpecificProduct() {
+            const productId = document.getElementById('product-id').value;
+            if (!productId) {
+                document.getElementById('specific-product-response').innerHTML = 
+                    '<div class="error">Please enter a product ID</div>';
+                return;
+            }
+            makeRequest(`/api/products/${productId}`, 'specific-product-response');
+        }
+        
+        function testStats() {
+            makeRequest('/api/products/stats', 'stats-response');
+        }
+        
+        function testCategories() {
+            makeRequest('/api/categories', 'categories-response');
+        }
+        
+        function testBrands() {
+            makeRequest('/api/brands', 'brands-response');
+        }
+        
+        async function loadDashboard() {
+            const dashboard = document.getElementById('dashboard');
+            dashboard.innerHTML = '<div class="loading">Loading dashboard data...</div>';
+            
+            try {
+                // Load statistics
+                const statsResponse = await fetch(`${API_BASE}/api/products/stats`);
+                const stats = await statsResponse.json();
+                
+                // Load sample products
+                const productsResponse = await fetch(`${API_BASE}/api/products?limit=6`);
+                const products = await productsResponse.json();
+                
+                let dashboardHTML = `
+                    <div class="stats">
+                        <div class="stat-card">
+                            <div class="stat-value">${stats.total_products.toLocaleString()}</div>
+                            <div class="stat-label">Total Products</div>
+                        </div>
+                        <div class="stat-card">
+                            <div class="stat-value">${stats.total_categories}</div>
+                            <div class="stat-label">Categories</div>
+                        </div>
+                        <div class="stat-card">
+                            <div class="stat-value">${stats.total_brands.toLocaleString()}</div>
+                            <div class="stat-label">Brands</div>
+                        </div>
+                        <div class="stat-card">
+                            <div class="stat-value">$${stats.price_stats.average_price}</div>
+                            <div class="stat-label">Average Price</div>
+                        </div>
+                    </div>
+                    
+                    <h3>Sample Products</h3>
+                    <div class="product-grid">
+                `;
+                
+                products.products.forEach(product => {
+                    dashboardHTML += `
+                        <div class="product-card">
+                            <div class="product-name">${product.name.substring(0, 50)}...</div>
+                            <div class="product-brand">${product.brand}</div>
+                            <div class="product-price">$${product.retail_price} (${product.profit_margin_percentage}% margin)</div>
+                        </div>
+                    `;
+                });
+                
+                dashboardHTML += '</div>';
+                dashboard.innerHTML = dashboardHTML;
+                
+            } catch (error) {
+                dashboard.innerHTML = `<div class="error">❌ Error loading dashboard: ${error.message}</div>`;
+            }
+        }
+        
+        // Auto-load dashboard on page load
+        window.addEventListener('load', () => {
+            setTimeout(loadDashboard, 1000);
+        });
+    </script>
+</body>
+</html> 
