@@ -191,10 +191,13 @@ def get_product(product_id):
 @app.route('/api/departments', methods=['GET'])
 def get_departments():
     """
-    GET /api/departments - Get all departments with optional product count
+    GET /api/departments - Get all departments with product count
+    
+    Query parameters:
+    - include_details: Include created_at and updated_at (default: false)
     """
     try:
-        include_count = request.args.get('include_count', 'false').lower() == 'true'
+        include_details = request.args.get('include_details', 'false').lower() == 'true'
         
         conn = get_db_connection()
         if not conn:
@@ -202,7 +205,8 @@ def get_departments():
             
         cursor = conn.cursor()
         
-        if include_count:
+        if include_details:
+            # Include full details with timestamps
             cursor.execute("""
                 SELECT d.id, d.name, d.created_at, d.updated_at, COUNT(p.id) as product_count
                 FROM departments d
@@ -220,14 +224,20 @@ def get_departments():
                     'product_count': row[4]
                 })
         else:
-            cursor.execute("SELECT id, name, created_at, updated_at FROM departments ORDER BY name")
+            # Default format matching Milestone 5 requirements
+            cursor.execute("""
+                SELECT d.id, d.name, COUNT(p.id) as product_count
+                FROM departments d
+                LEFT JOIN products p ON d.id = p.department_id
+                GROUP BY d.id, d.name
+                ORDER BY d.name
+            """)
             departments = []
             for row in cursor.fetchall():
                 departments.append({
                     'id': row[0],
                     'name': row[1],
-                    'created_at': row[2],
-                    'updated_at': row[3]
+                    'product_count': row[2]
                 })
         
         conn.close()
@@ -274,6 +284,123 @@ def get_department(department_id):
         
     except Exception as e:
         logger.error(f"Error in get_department: {e}")
+        return jsonify({'error': 'Internal server error'}), 500
+
+@app.route('/api/departments/<int:department_id>/products', methods=['GET'])
+def get_department_products(department_id):
+    """
+    GET /api/departments/{id}/products - Get all products in a department
+    
+    Query parameters:
+    - page: Page number (default: 1)
+    - limit: Items per page (default: 10, max: 100)
+    - category: Filter by category within department
+    - brand: Filter by brand within department
+    """
+    try:
+        # Get query parameters
+        page = request.args.get('page', 1, type=int)
+        limit = min(request.args.get('limit', 10, type=int), 100)  # Max 100 items per page
+        category = request.args.get('category')
+        brand = request.args.get('brand')
+        
+        # Calculate offset
+        offset = (page - 1) * limit
+        
+        conn = get_db_connection()
+        if not conn:
+            return jsonify({'error': 'Database connection failed'}), 500
+            
+        cursor = conn.cursor()
+        
+        # First, verify the department exists
+        cursor.execute("SELECT id, name FROM departments WHERE id = ?", (department_id,))
+        dept_row = cursor.fetchone()
+        
+        if dept_row is None:
+            conn.close()
+            return jsonify({'error': 'Department not found'}), 404
+        
+        department_name = dept_row[1]
+        
+        # Build query for products in this department
+        query = """
+            SELECT p.*, d.name as department_name 
+            FROM products p 
+            LEFT JOIN departments d ON p.department_id = d.id 
+            WHERE p.department_id = ?
+        """
+        params = [department_id]
+        
+        if category:
+            query += " AND p.category = ?"
+            params.append(category)
+        
+        if brand:
+            query += " AND p.brand = ?"
+            params.append(brand)
+        
+        # Get total count
+        count_query = query.replace("SELECT p.*, d.name as department_name", "SELECT COUNT(*)")
+        cursor.execute(count_query, params)
+        total_count = cursor.fetchone()[0]
+        
+        if total_count == 0:
+            conn.close()
+            return jsonify({
+                'department': department_name,
+                'products': [],
+                'pagination': {
+                    'page': page,
+                    'limit': limit,
+                    'total_count': 0,
+                    'total_pages': 0,
+                    'has_next': False,
+                    'has_prev': False
+                },
+                'filters': {
+                    'category': category,
+                    'brand': brand
+                }
+            }), 200
+        
+        # Get paginated results
+        query += " ORDER BY p.id LIMIT ? OFFSET ?"
+        params.extend([limit, offset])
+        
+        cursor.execute(query, params)
+        rows = cursor.fetchall()
+        
+        # Format products
+        products = [format_product(row) for row in rows]
+        
+        # Calculate pagination info
+        total_pages = (total_count + limit - 1) // limit
+        has_next = page < total_pages
+        has_prev = page > 1
+        
+        response = {
+            'department': department_name,
+            'products': products,
+            'pagination': {
+                'page': page,
+                'limit': limit,
+                'total_count': total_count,
+                'total_pages': total_pages,
+                'has_next': has_next,
+                'has_prev': has_prev
+            },
+            'filters': {
+                'category': category,
+                'brand': brand
+            }
+        }
+        
+        conn.close()
+        return jsonify(response), 200
+        
+    except Exception as e:
+        logger.error(f"Error in get_department_products: {e}")
         return jsonify({'error': 'Internal server error'}), 500
 
 @app.route('/api/products/stats', methods=['GET'])
@@ -423,8 +550,9 @@ def home():
             'GET /api/products': 'List all products (with pagination and filters)',
             'GET /api/products/{id}': 'Get specific product by ID',
             'GET /api/products/stats': 'Get product statistics',
-            'GET /api/departments': 'Get all departments',
-            'GET /api/departments/{id}': 'Get specific department by ID',
+            'GET /api/departments': 'Get all departments with product count',
+            'GET /api/departments/{id}': 'Get specific department details',
+            'GET /api/departments/{id}/products': 'Get all products in a department',
             'GET /api/categories': 'Get all product categories',
             'GET /api/brands': 'Get all product brands'
         },
@@ -435,7 +563,7 @@ def home():
             'brand': 'Filter by brand',
             'department_id': 'Filter by department ID',
             'department_name': 'Filter by department name',
-            'include_count': 'Include product count in departments response (true/false)'
+            'include_details': 'Include timestamps in departments response (true/false)'
         },
         'database_structure': {
             'products': 'Contains product information with department_id foreign key',
@@ -449,8 +577,9 @@ if __name__ == '__main__':
     logger.info("  GET /api/products - List all products")
     logger.info("  GET /api/products/{id} - Get specific product")
     logger.info("  GET /api/products/stats - Get statistics")
-    logger.info("  GET /api/departments - Get all departments")
-    logger.info("  GET /api/departments/{id} - Get specific department")
+    logger.info("  GET /api/departments - Get all departments with product count")
+    logger.info("  GET /api/departments/{id} - Get specific department details")
+    logger.info("  GET /api/departments/{id}/products - Get products in department")
     logger.info("  GET /api/categories - Get all categories")
     logger.info("  GET /api/brands - Get all brands")
     
